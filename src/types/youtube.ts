@@ -72,3 +72,26 @@ export interface ChannelInfo {
   subscriberCount: number;
   videoCount: number;
 }
+
+export interface PlaylistInfo {
+  id: string;
+  title: string;
+  description?: string;
+  thumbnail?: string;
+  videoCount: number;
+  channelTitle: string;
+  channelId: string;
+}
+
+export interface ParsedURLResult {
+  type: "video" | "channel" | "playlist";
+  video?: VideoItem;
+  channel?: ChannelInfo;
+  playlist?: {
+    id: string;
+    title: string;
+    videos: VideoItem[];
+    nextPageToken?: string;
+  };
+  timestamp?: number;
+}

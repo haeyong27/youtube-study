@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Users, Video } from "lucide-react";
+import { Search, Users, Video, Link, AlertCircle } from "lucide-react";
 import { ChannelInfo } from "@/types/youtube";
+import { isYouTubeURL } from "@/utils/youtube-url-parser";
 
 interface ChannelSearchProps {
   onChannelSelect: (channel: ChannelInfo) => void;
@@ -13,30 +14,65 @@ export default function ChannelSearch({ onChannelSelect }: ChannelSearchProps) {
   const [channels, setChannels] = useState<ChannelInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [urlInfo, setUrlInfo] = useState<any>(null);
 
   const searchChannels = async () => {
     if (!query.trim()) return;
 
     setLoading(true);
     setError(null);
+    setUrlInfo(null);
 
     try {
-      const response = await fetch(
-        `/api/youtube/channels?q=${encodeURIComponent(query)}`
-      );
-      const data = await response.json();
+      // YouTube URL인지 확인
+      if (isYouTubeURL(query)) {
+        await handleYouTubeURL(query);
+      } else {
+        // 일반 검색
+        const response = await fetch(
+          `/api/youtube/channels?q=${encodeURIComponent(query)}`
+        );
+        const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || "채널 검색에 실패했습니다.");
+        if (!response.ok) {
+          throw new Error(data.error || "채널 검색에 실패했습니다.");
+        }
+
+        setChannels(data.channels);
       }
-
-      setChannels(data.channels);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다."
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleYouTubeURL = async (url: string) => {
+    try {
+      const response = await fetch("/api/youtube/parse-url", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ url }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "URL 처리에 실패했습니다.");
+      }
+
+      setUrlInfo(data);
+
+      // 채널 정보가 있으면 채널 목록에 추가
+      if (data.channel) {
+        setChannels([data.channel]);
+      }
+    } catch (error) {
+      throw error;
     }
   };
 
@@ -54,6 +90,59 @@ export default function ChannelSearch({ onChannelSelect }: ChannelSearchProps) {
     return num.toString();
   };
 
+  const renderURLInfo = () => {
+    if (!urlInfo) return null;
+
+    return (
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+        <div className="flex items-start space-x-3">
+          <Link className="w-5 h-5 text-blue-600 mt-0.5" />
+          <div className="flex-1">
+            <h4 className="font-semibold text-blue-900 mb-2">URL 분석 결과</h4>
+
+            {urlInfo.type === "video" && urlInfo.video && (
+              <div className="space-y-2">
+                <p className="text-sm text-blue-800">
+                  <strong>영상:</strong> {urlInfo.video.title}
+                </p>
+                {urlInfo.timestamp && (
+                  <p className="text-sm text-blue-800">
+                    <strong>타임스탬프:</strong>{" "}
+                    {Math.floor(urlInfo.timestamp / 60)}:
+                    {(urlInfo.timestamp % 60).toString().padStart(2, "0")}
+                  </p>
+                )}
+                {urlInfo.playlist && (
+                  <p className="text-sm text-blue-800">
+                    <strong>플레이리스트:</strong> {urlInfo.playlist.title} (
+                    {urlInfo.playlist.videos.length}개 영상)
+                  </p>
+                )}
+              </div>
+            )}
+
+            {urlInfo.type === "playlist" && urlInfo.playlist && (
+              <div className="space-y-2">
+                <p className="text-sm text-blue-800">
+                  <strong>플레이리스트:</strong> {urlInfo.playlist.title}
+                </p>
+                <p className="text-sm text-blue-800">
+                  <strong>영상 수:</strong> {urlInfo.playlist.videos.length}개
+                </p>
+              </div>
+            )}
+
+            {urlInfo.channel && (
+              <p className="text-sm text-blue-800">
+                <strong>채널:</strong> {urlInfo.channel.title}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div className="text-center">
@@ -61,7 +150,7 @@ export default function ChannelSearch({ onChannelSelect }: ChannelSearchProps) {
           유튜브 채널 검색
         </h2>
         <p className="text-gray-600">
-          학습하고 싶은 유튜브 채널을 검색해보세요
+          채널명을 검색하거나 YouTube URL을 입력해보세요
         </p>
       </div>
 
@@ -72,7 +161,7 @@ export default function ChannelSearch({ onChannelSelect }: ChannelSearchProps) {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="채널명을 입력하세요 (예: 생활코딩, 노마드 코더)"
+            placeholder="채널명 또는 YouTube URL (예: 생활코딩, https://youtube.com/@nomadcoders)"
             className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-youtube-red focus:border-transparent"
           />
         </div>
@@ -81,19 +170,27 @@ export default function ChannelSearch({ onChannelSelect }: ChannelSearchProps) {
           disabled={loading || !query.trim()}
           className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? "검색 중..." : "검색"}
+          {loading ? "처리 중..." : "검색"}
         </button>
       </form>
 
+      {/* URL 정보 표시 */}
+      {renderURLInfo()}
+
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-600">{error}</p>
+          <div className="flex items-start space-x-3">
+            <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
+            <p className="text-red-600">{error}</p>
+          </div>
         </div>
       )}
 
       {channels.length > 0 && (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900">검색 결과</h3>
+          <h3 className="text-lg font-semibold text-gray-900">
+            {isYouTubeURL(query) ? "채널 정보" : "검색 결과"}
+          </h3>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {channels.map((channel) => (
               <div
