@@ -1,102 +1,88 @@
-# 유튜브 영상 학습 서비스
+# YouTube Study
 
-## 기존 아이디어
-1. 스크립트 추출 -> 질의응답
-2. 이미지 까지 같이 추출 -> 내용정리 -> 질의응답
+YouTube 채널, 플레이리스트, 영상을 분석하고 AI와 채팅할 수 있는 학습 도구입니다.
 
-## 전체 프로세스
+## 주요 기능
 
-### 1. 채널 영상 목록 조회
-- **기술**: YouTube Data API v3 (Google API Key 사용)
-- **기능**: 특정 채널의 영상 리스트 가져오기
-- **출력**: 영상 제목, 썸네일, 업로드 날짜, 영상 ID, 조회수 등
-
-### 2. 영상 선택 및 정보 표시
-- **기능**: 사용자가 관심있는 영상 선택
-- **UI**: 영상 목록을 카드 형태로 표시
-- **정보**: 제목, 썸네일, 설명, 길이, 업로드 날짜
-
-### 3. 영상 스크립트 추출
-- **기술**: yt-dlp 또는 YouTube Transcript API
-- **기능**: 선택된 영상의 자막/스크립트 추출
-- **처리**: 자동 생성 자막 또는 수동 자막 우선순위 처리
-
-### 4. 내용 요약 및 분석
-- **기술**: OpenAI API 또는 Google Gemini API
-- **기능**: 
-  - 스크립트 내용 요약
-  - 주요 키워드 추출
-  - 학습 포인트 정리
-  - 챕터별 구분
-
-### 5. 질의응답 시스템
-- **기술**: LLM API (OpenAI/Google)
-- **기능**:
-  - 영상 내용 기반 질문 생성
-  - 사용자 질문에 대한 답변
-  - 관련 타임스탬프 제공
-  - 추가 학습 자료 추천
-
-### 6. 학습 관리
-- **기능**:
-  - 학습한 영상 목록 관리
-  - 학습 진도 추적
-  - 복습 알림
-  - 노트 작성 및 저장
-
-## 기술 스택 (예상)
-- **Frontend**: Next.js, React, Tailwind CSS
-- **Backend**: Node.js, Express 또는 Next.js API Routes
-- **Database**: SQLite 또는 PostgreSQL
-- **APIs**: 
-  - YouTube Data API v3
-  - OpenAI API
-  - Google Gemini API
-- **패키지 매니저**: bun
-- **영상 처리**: yt-dlp
-
-## 환경 변수
-- `GOOGLE_API_KEY`: YouTube Data API 및 Gemini API
-- `OPENAI_API_KEY`: OpenAI GPT API
+- **YouTube 콘텐츠 검색**: 채널명이나 YouTube URL로 검색
+- **전체 데이터 로드**: 모든 영상과 플레이리스트를 한번에 가져오기
+- **AI 채팅 기능**: 
+  - 채널 전체에 대한 분석 및 추천
+  - 플레이리스트 학습 계획 수립
+  - 개별 영상 내용 분석 및 요약
+  - 일반적인 학습 상담
 
 ## 설치 및 실행
 
-### 1. 의존성 설치
+1. 의존성 설치:
 ```bash
 bun install
 ```
 
-### 2. 환경 변수 설정
+2. 환경 변수 설정:
 `.env.local` 파일을 생성하고 다음 내용을 추가하세요:
 
 ```env
-# YouTube Data API v3 키 (Google Cloud Console에서 발급)
-GOOGLE_API_KEY=your_youtube_api_key_here
+# Google YouTube API Key
+GOOGLE_API_KEY=your_google_api_key_here
 
-# OpenAI API 키 (향후 스크립트 요약 및 질의응답에 사용)
+# OpenAI API Key for AI Chat
 OPENAI_API_KEY=your_openai_api_key_here
 ```
 
-### 3. 개발 서버 실행
+3. 개발 서버 실행:
 ```bash
 bun run dev
 ```
 
-서버가 실행되면 http://localhost:3000 에서 확인할 수 있습니다.
+## API 키 발급 방법
 
-## 현재 구현 상태
+### Google YouTube API Key
+1. [Google Cloud Console](https://console.cloud.google.com/)에 접속
+2. 새 프로젝트 생성 또는 기존 프로젝트 선택
+3. YouTube Data API v3 활성화
+4. 사용자 인증 정보에서 API 키 생성
 
-### ✅ 완료된 기능
-1. **채널 검색**: 유튜브 채널명으로 검색
-2. **채널 영상 목록**: 선택한 채널의 최신 영상들 표시
-3. **반응형 UI**: 모바일/데스크톱 대응
+### OpenAI API Key
+1. [OpenAI Platform](https://platform.openai.com/)에 접속
+2. API Keys 섹션에서 새 API 키 생성
+3. 생성된 키를 안전하게 보관
 
-### 🚧 진행 중인 기능
-- 영상 스크립트 추출
-- 내용 요약 및 분석
-- 질의응답 시스템
+## 사용 방법
 
-### 📋 예정된 기능
-- 학습 진도 관리
-- 노트 작성 기능
-- 복습 알림 시스템
+### 기본 검색
+1. 메인 페이지에서 채널명 또는 YouTube URL 입력
+2. 검색 결과에서 원하는 채널 선택
+
+### AI 채팅 기능
+- **일반 채팅**: 메인 페이지 좌하단의 파란색 채팅 버튼 클릭
+- **채널 분석**: 채널 페이지에서 "AI와 채팅" 버튼 클릭
+- **플레이리스트 분석**: 플레이리스트 페이지에서 "AI와 채팅" 버튼 클릭
+- **개별 영상 분석**: 
+  - 영상에 마우스 호버 시 나타나는 채팅 버튼 클릭
+  - 또는 Shift + 클릭으로 영상 채팅 열기
+
+### AI 채팅 예시 질문
+- **채널 분석**: "이 채널의 특징을 분석해주세요", "추천 영상을 골라주세요"
+- **플레이리스트**: "학습 순서를 추천해주세요", "각 영상의 주요 내용을 설명해주세요"
+- **개별 영상**: "이 영상의 핵심 내용을 요약해주세요", "학습 포인트를 정리해주세요"
+
+## 기술 스택
+
+- **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS
+- **AI**: Vercel AI SDK, OpenAI GPT-4
+- **API**: YouTube Data API v3
+- **Package Manager**: Bun
+
+## 주요 변경사항
+
+### v2.0 - AI 채팅 기능 추가
+- Vercel AI SDK를 사용한 실시간 스트리밍 채팅
+- 컨텍스트 기반 AI 분석 (채널, 플레이리스트, 영상별)
+- 개별 영상에 대한 상세 분석 기능
+- 학습 계획 수립 및 추천 시스템
+
+### v1.0 - 기본 기능
+- YouTube 채널/플레이리스트 검색
+- 모든 영상 데이터 한번에 로드
+- 반응형 UI 디자인

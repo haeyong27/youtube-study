@@ -9,10 +9,12 @@ import {
   Calendar,
   List,
   Video as VideoIcon,
+  MessageCircle,
 } from "lucide-react";
 import { ChannelInfo, VideoItem, PlaylistInfo } from "@/types/youtube";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
+import ChatInterface from "./ChatInterface";
 
 interface VideoListProps {
   channel: ChannelInfo;
@@ -30,6 +32,8 @@ export default function VideoList({
   const [playlists, setPlaylists] = useState<PlaylistInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showChat, setShowChat] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState<VideoItem | null>(null);
 
   useEffect(() => {
     if (activeTab === "videos") {
@@ -113,34 +117,56 @@ export default function VideoList({
     }
   };
 
+  const handleVideoClick = (video: VideoItem, event: React.MouseEvent) => {
+    // Shift 키를 누르고 클릭하면 채팅 열기
+    if (event.shiftKey) {
+      setSelectedVideo(video);
+      setShowChat(true);
+    } else {
+      // 기본 동작: 새 탭에서 영상 열기
+      window.open(video.url, "_blank");
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* 헤더 */}
-      <div className="flex items-center space-x-4">
-        <button
-          onClick={onBack}
-          className="btn-secondary flex items-center space-x-2"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>뒤로가기</span>
-        </button>
-
+      <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <img
-            src={channel.thumbnail}
-            alt={channel.title}
-            className="w-12 h-12 rounded-full object-cover"
-          />
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              {channel.title}
-            </h1>
-            <p className="text-gray-600">
-              구독자 {formatNumber(channel.subscriberCount)}명 • 동영상{" "}
-              {formatNumber(channel.videoCount)}개
-            </p>
+          <button
+            onClick={onBack}
+            className="btn-secondary flex items-center space-x-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>뒤로가기</span>
+          </button>
+
+          <div className="flex items-center space-x-4">
+            <img
+              src={channel.thumbnail}
+              alt={channel.title}
+              className="w-12 h-12 rounded-full object-cover"
+            />
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {channel.title}
+              </h1>
+              <p className="text-gray-600">
+                구독자 {formatNumber(channel.subscriberCount)}명 • 동영상{" "}
+                {formatNumber(channel.videoCount)}개
+              </p>
+            </div>
           </div>
         </div>
+
+        {/* AI 채팅 버튼 */}
+        <button
+          onClick={() => setShowChat(true)}
+          className="btn-primary flex items-center space-x-2"
+        >
+          <MessageCircle className="w-4 h-4" />
+          <span>AI와 채팅</span>
+        </button>
       </div>
 
       {/* 탭 메뉴 */}
@@ -186,14 +212,14 @@ export default function VideoList({
         <div className="space-y-4">
           {videos.length > 0 ? (
             <div className="space-y-3">
+              <div className="text-sm text-gray-500 mb-2">
+                💡 Shift + 클릭으로 영상에 대해 AI와 채팅할 수 있습니다
+              </div>
               {videos.map((video) => (
                 <div
                   key={video.id}
                   className="flex items-start space-x-4 p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow cursor-pointer group"
-                  onClick={() => {
-                    // TODO: 영상 선택 시 스크립트 추출 페이지로 이동
-                    window.open(video.url, "_blank");
-                  }}
+                  onClick={(e) => handleVideoClick(video, e)}
                 >
                   {/* 썸네일 */}
                   <div className="relative flex-shrink-0">
@@ -233,6 +259,19 @@ export default function VideoList({
                       </p>
                     )}
                   </div>
+
+                  {/* 채팅 버튼 */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedVideo(video);
+                      setShowChat(true);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity bg-youtube-red text-white p-2 rounded-lg hover:bg-red-700"
+                    title="이 영상에 대해 AI와 채팅"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                  </button>
                 </div>
               ))}
             </div>
@@ -305,6 +344,28 @@ export default function VideoList({
             중...
           </p>
         </div>
+      )}
+
+      {/* AI 채팅 인터페이스 */}
+      {showChat && (
+        <ChatInterface
+          context={
+            selectedVideo
+              ? {
+                  type: "video",
+                  data: selectedVideo,
+                }
+              : {
+                  type: "channel",
+                  data: channel,
+                  videos: activeTab === "videos" ? videos : undefined,
+                }
+          }
+          onClose={() => {
+            setShowChat(false);
+            setSelectedVideo(null);
+          }}
+        />
       )}
     </div>
   );

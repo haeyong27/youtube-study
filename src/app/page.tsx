@@ -4,7 +4,9 @@ import { useState } from "react";
 import ChannelSearch from "@/components/ChannelSearch";
 import VideoList from "@/components/VideoList";
 import PlaylistView from "@/components/PlaylistView";
+import ChatInterface from "@/components/ChatInterface";
 import { ChannelInfo } from "@/types/youtube";
+import { MessageCircle } from "lucide-react";
 
 type ViewState =
   | { type: "search" }
@@ -13,6 +15,7 @@ type ViewState =
 
 export default function HomePage() {
   const [viewState, setViewState] = useState<ViewState>({ type: "search" });
+  const [showGeneralChat, setShowGeneralChat] = useState(false);
 
   const handleChannelSelect = (channel: ChannelInfo) => {
     setViewState({ type: "channel", channel });
@@ -57,6 +60,22 @@ export default function HomePage() {
           playlistTitle={viewState.playlistTitle}
           onBack={handleBackToChannel}
         />
+      )}
+
+      {/* 일반 AI 채팅 버튼 (검색 페이지에서만 표시) */}
+      {viewState.type === "search" && !showGeneralChat && (
+        <button
+          onClick={() => setShowGeneralChat(true)}
+          className="fixed bottom-4 left-4 bg-blue-500 text-white p-3 rounded-full shadow-lg hover:bg-blue-600 transition-colors z-40"
+          title="AI 어시스턴트와 채팅"
+        >
+          <MessageCircle className="w-6 h-6" />
+        </button>
+      )}
+
+      {/* 일반 AI 채팅 인터페이스 */}
+      {showGeneralChat && (
+        <ChatInterface onClose={() => setShowGeneralChat(false)} />
       )}
     </div>
   );
