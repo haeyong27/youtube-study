@@ -4,6 +4,7 @@ import {
   YouTubeChannelResponse,
   VideoItem,
   ChannelInfo,
+  PlaylistInfo,
 } from "@/types/youtube";
 
 const YOUTUBE_API_BASE_URL = "https://www.googleapis.com/youtube/v3";
@@ -110,6 +111,47 @@ class YouTubeAPI {
         console.error("채널 검색도 실패:", searchError);
         throw error;
       }
+    }
+  }
+
+  // 채널의 플레이리스트 목록 가져오기
+  async getChannelPlaylists(
+    channelId: string,
+    maxResults: number = 20,
+    pageToken?: string
+  ): Promise<{ playlists: PlaylistInfo[]; nextPageToken?: string }> {
+    try {
+      const response = await axios.get(`${YOUTUBE_API_BASE_URL}/playlists`, {
+        params: {
+          key: this.apiKey,
+          channelId,
+          part: "snippet,contentDetails",
+          maxResults,
+          pageToken,
+        },
+      });
+
+      const playlists: PlaylistInfo[] = response.data.items.map(
+        (playlist: any) => ({
+          id: playlist.id,
+          title: playlist.snippet.title,
+          description: playlist.snippet.description,
+          thumbnail:
+            playlist.snippet.thumbnails.high?.url ||
+            playlist.snippet.thumbnails.medium?.url,
+          videoCount: parseInt(playlist.contentDetails.itemCount || "0"),
+          channelTitle: playlist.snippet.channelTitle,
+          channelId: playlist.snippet.channelId,
+        })
+      );
+
+      return {
+        playlists,
+        nextPageToken: response.data.nextPageToken,
+      };
+    } catch (error) {
+      console.error("채널 플레이리스트 목록 가져오기 실패:", error);
+      throw error;
     }
   }
 

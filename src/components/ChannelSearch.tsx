@@ -7,9 +7,13 @@ import { isYouTubeURL } from "@/utils/youtube-url-parser";
 
 interface ChannelSearchProps {
   onChannelSelect: (channel: ChannelInfo) => void;
+  onPlaylistSelect?: (playlistId: string, playlistTitle: string) => void;
 }
 
-export default function ChannelSearch({ onChannelSelect }: ChannelSearchProps) {
+export default function ChannelSearch({
+  onChannelSelect,
+  onPlaylistSelect,
+}: ChannelSearchProps) {
   const [query, setQuery] = useState("");
   const [channels, setChannels] = useState<ChannelInfo[]>([]);
   const [loading, setLoading] = useState(false);
@@ -71,6 +75,11 @@ export default function ChannelSearch({ onChannelSelect }: ChannelSearchProps) {
       if (data.channel) {
         setChannels([data.channel]);
       }
+
+      // 플레이리스트 URL인 경우 직접 플레이리스트 뷰로 이동
+      if (data.type === "playlist" && data.playlist && onPlaylistSelect) {
+        onPlaylistSelect(data.playlist.id, data.playlist.title);
+      }
     } catch (error) {
       throw error;
     }
@@ -113,10 +122,25 @@ export default function ChannelSearch({ onChannelSelect }: ChannelSearchProps) {
                   </p>
                 )}
                 {urlInfo.playlist && (
-                  <p className="text-sm text-blue-800">
-                    <strong>플레이리스트:</strong> {urlInfo.playlist.title} (
-                    {urlInfo.playlist.videos.length}개 영상)
-                  </p>
+                  <div className="space-y-1">
+                    <p className="text-sm text-blue-800">
+                      <strong>플레이리스트:</strong> {urlInfo.playlist.title} (
+                      {urlInfo.playlist.videos.length}개 영상)
+                    </p>
+                    {onPlaylistSelect && (
+                      <button
+                        onClick={() =>
+                          onPlaylistSelect(
+                            urlInfo.playlist.id,
+                            urlInfo.playlist.title
+                          )
+                        }
+                        className="text-sm text-blue-600 hover:text-blue-800 underline"
+                      >
+                        플레이리스트 보기 →
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             )}
@@ -128,6 +152,9 @@ export default function ChannelSearch({ onChannelSelect }: ChannelSearchProps) {
                 </p>
                 <p className="text-sm text-blue-800">
                   <strong>영상 수:</strong> {urlInfo.playlist.videos.length}개
+                </p>
+                <p className="text-sm text-green-700 font-medium">
+                  ✓ 플레이리스트 페이지로 자동 이동됩니다
                 </p>
               </div>
             )}
@@ -161,7 +188,7 @@ export default function ChannelSearch({ onChannelSelect }: ChannelSearchProps) {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="채널명 또는 YouTube URL (예: 생활코딩, https://youtube.com/@nomadcoders)"
+            placeholder="채널명, 영상 URL, 플레이리스트 URL (예: 생활코딩, https://youtube.com/@nomadcoders)"
             className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-youtube-red focus:border-transparent"
           />
         </div>
