@@ -12,6 +12,9 @@ import {
   MessageCircle,
   FileText,
   Loader2,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
 } from "lucide-react";
 import { VideoItem } from "@/types/youtube";
 import { formatDistanceToNow } from "date-fns";
@@ -28,7 +31,7 @@ export default function VideoDetailPage() {
   const [loading, setLoading] = useState(true);
   const [transcriptLoading, setTranscriptLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showChat, setShowChat] = useState(false);
+  const [showTranscript, setShowTranscript] = useState(false);
 
   useEffect(() => {
     if (videoId) {
@@ -77,6 +80,7 @@ export default function VideoDetailPage() {
       }
 
       setTranscript(data.transcript);
+      setShowTranscript(true); // 스크립트를 가져오면 자동으로 열기
     } catch (err) {
       setError(
         err instanceof Error
@@ -137,8 +141,9 @@ export default function VideoDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto px-4 py-6">
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* 왼쪽 영역: 영상 정보 + 스크립트 */}
+      <div className="flex-1 p-6 overflow-y-auto">
         {/* 헤더 */}
         <div className="flex items-center justify-between mb-6">
           <button
@@ -149,78 +154,80 @@ export default function VideoDetailPage() {
             <span>뒤로가기</span>
           </button>
 
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={() => window.open(video.url, "_blank")}
-              className="btn-secondary flex items-center space-x-2"
-            >
-              <Play className="w-4 h-4" />
-              <span>YouTube에서 보기</span>
-            </button>
-
-            <button
-              onClick={() => setShowChat(true)}
-              className="btn-primary flex items-center space-x-2"
-            >
-              <MessageCircle className="w-4 h-4" />
-              <span>AI와 채팅</span>
-            </button>
-          </div>
+          <button
+            onClick={() => window.open(video.url, "_blank")}
+            className="btn-primary flex items-center space-x-2"
+          >
+            <ExternalLink className="w-4 h-4" />
+            <span>YouTube에서 보기</span>
+          </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* 메인 콘텐츠 */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* 영상 정보 */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-start space-x-4">
-                <div className="relative flex-shrink-0">
-                  <img
-                    src={video.thumbnail}
-                    alt={video.title}
-                    className="w-48 h-28 object-cover rounded-lg"
-                  />
-                  <div className="absolute bottom-2 right-2 bg-black bg-opacity-80 text-white text-xs px-2 py-1 rounded">
-                    {video.duration}
-                  </div>
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <h1 className="text-2xl font-bold text-gray-900 mb-3 leading-tight">
-                    {video.title}
-                  </h1>
-
-                  <div className="flex items-center space-x-6 text-sm text-gray-500 mb-4">
-                    <div className="flex items-center space-x-1">
-                      <Eye className="w-4 h-4" />
-                      <span>조회수 {formatNumber(video.viewCount)}회</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Calendar className="w-4 h-4" />
-                      <span>{formatDate(video.publishedAt)}</span>
-                    </div>
-                  </div>
-
-                  {video.description && (
-                    <div className="text-gray-700">
-                      <h3 className="font-semibold mb-2">설명</h3>
-                      <p className="whitespace-pre-wrap text-sm leading-relaxed">
-                        {video.description}
-                      </p>
-                    </div>
-                  )}
-                </div>
+        {/* 영상 정보 */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="flex items-start space-x-4">
+            <div className="relative flex-shrink-0">
+              <img
+                src={video.thumbnail}
+                alt={video.title}
+                className="w-64 h-36 object-cover rounded-lg"
+              />
+              <div className="absolute bottom-2 right-2 bg-black bg-opacity-80 text-white text-xs px-2 py-1 rounded">
+                {video.duration}
               </div>
             </div>
 
-            {/* 스크립트 섹션 */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-900 flex items-center space-x-2">
-                  <FileText className="w-5 h-5" />
-                  <span>영상 스크립트</span>
-                </h2>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl font-bold text-gray-900 mb-3 leading-tight">
+                {video.title}
+              </h1>
 
+              <div className="flex items-center space-x-6 text-sm text-gray-500 mb-4">
+                <div className="flex items-center space-x-1">
+                  <Eye className="w-4 h-4" />
+                  <span>조회수 {formatNumber(video.viewCount)}회</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <Calendar className="w-4 h-4" />
+                  <span>{formatDate(video.publishedAt)}</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <Clock className="w-4 h-4" />
+                  <span>{video.duration}</span>
+                </div>
+              </div>
+
+              <p className="text-gray-600 text-sm">
+                채널: {video.channelTitle}
+              </p>
+            </div>
+          </div>
+
+          {video.description && (
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <h3 className="font-semibold mb-2 text-gray-900">영상 설명</h3>
+              <p className="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed line-clamp-3">
+                {video.description}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* 스크립트 섹션 */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900 flex items-center space-x-2">
+                <FileText className="w-5 h-5" />
+                <span>영상 스크립트</span>
+                {transcript && (
+                  <span className="text-sm font-normal text-green-600">
+                    (로드됨)
+                  </span>
+                )}
+              </h2>
+
+              <div className="flex items-center space-x-3">
                 {!transcript && (
                   <button
                     onClick={loadTranscript}
@@ -239,96 +246,90 @@ export default function VideoDetailPage() {
                     </span>
                   </button>
                 )}
-              </div>
 
-              {transcript ? (
-                <div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
-                  <pre className="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed">
-                    {transcript}
-                  </pre>
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p>스크립트를 가져오려면 위의 버튼을 클릭하세요.</p>
-                  <p className="text-sm mt-2">
-                    yt-dlp를 사용하여 영상의 자막/스크립트를 추출합니다.
-                  </p>
-                </div>
-              )}
+                {transcript && (
+                  <button
+                    onClick={() => setShowTranscript(!showTranscript)}
+                    className="btn-secondary flex items-center space-x-2"
+                  >
+                    {showTranscript ? (
+                      <ChevronUp className="w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4" />
+                    )}
+                    <span>{showTranscript ? "숨기기" : "보기"}</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* 사이드바 */}
-          <div className="space-y-6">
-            {/* 빠른 액션 */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="font-bold text-gray-900 mb-4">빠른 액션</h3>
-              <div className="space-y-3">
-                <button
-                  onClick={() => setShowChat(true)}
-                  className="w-full btn-primary flex items-center justify-center space-x-2"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  <span>AI와 채팅하기</span>
-                </button>
-
-                <button
-                  onClick={loadTranscript}
-                  disabled={transcriptLoading}
-                  className="w-full btn-secondary flex items-center justify-center space-x-2"
-                >
-                  {transcriptLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Download className="w-4 h-4" />
-                  )}
-                  <span>
-                    {transcriptLoading ? "가져오는 중..." : "스크립트 가져오기"}
-                  </span>
-                </button>
-
-                <button
-                  onClick={() => window.open(video.url, "_blank")}
-                  className="w-full btn-secondary flex items-center justify-center space-x-2"
-                >
-                  <Play className="w-4 h-4" />
-                  <span>YouTube에서 보기</span>
-                </button>
+          {transcript && showTranscript && (
+            <div className="p-6">
+              <div className="bg-gray-50 rounded-lg p-4 max-h-96 overflow-y-auto">
+                <pre className="whitespace-pre-wrap text-sm text-gray-700 leading-relaxed">
+                  {transcript}
+                </pre>
               </div>
             </div>
+          )}
 
-            {/* 학습 팁 */}
-            <div className="bg-blue-50 rounded-lg border border-blue-200 p-6">
-              <h3 className="font-bold text-blue-900 mb-3">💡 학습 팁</h3>
-              <ul className="text-sm text-blue-800 space-y-2">
-                <li>
-                  • 스크립트를 먼저 가져온 후 AI와 채팅하면 더 정확한 분석을
-                  받을 수 있습니다
-                </li>
-                <li>• "핵심 내용 요약해줘"라고 물어보세요</li>
-                <li>• "학습 포인트 정리해줘"로 중요한 부분을 파악하세요</li>
-                <li>• "이해하기 어려운 부분 설명해줘"로 도움을 받으세요</li>
-              </ul>
+          {!transcript && !transcriptLoading && (
+            <div className="p-6">
+              <div className="text-center py-8 text-gray-500">
+                <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="mb-2">
+                  스크립트를 가져와서 더 정확한 AI 분석을 받아보세요
+                </p>
+                <p className="text-sm">
+                  yt-dlp를 사용하여 영상의 자막/스크립트를 추출합니다.
+                </p>
+              </div>
             </div>
-          </div>
+          )}
+        </div>
+
+        {/* 학습 팁 */}
+        <div className="mt-6 bg-blue-50 rounded-lg border border-blue-200 p-6">
+          <h3 className="font-bold text-blue-900 mb-3 flex items-center space-x-2">
+            <MessageCircle className="w-5 h-5" />
+            <span>💡 AI 채팅 활용 팁</span>
+          </h3>
+          <ul className="text-sm text-blue-800 space-y-2">
+            <li>
+              • 스크립트를 먼저 가져온 후 AI와 채팅하면 더 정확한 분석을 받을 수
+              있습니다
+            </li>
+            <li>• "핵심 내용을 3줄로 요약해줘"라고 물어보세요</li>
+            <li>
+              • "학습해야 할 중요한 포인트를 정리해줘"로 핵심을 파악하세요
+            </li>
+            <li>• "이해하기 어려운 개념을 쉽게 설명해줘"로 도움을 받으세요</li>
+            <li>
+              • "시간대별로 중요한 부분을 알려줘"로 효율적인 학습이 가능합니다
+            </li>
+          </ul>
         </div>
       </div>
 
-      {/* AI 채팅 인터페이스 */}
-      {showChat && (
-        <ChatInterface
-          isOpen={showChat}
-          onClose={() => setShowChat(false)}
-          context={{
-            type: "video",
-            data: {
-              video,
-              transcript: transcript || undefined,
-            },
-          }}
-        />
-      )}
+      {/* 오른쪽 영역: AI 채팅 (메인) */}
+      <div className="w-[600px] flex-shrink-0">
+        <div className="h-full p-6">
+          <div className="h-full">
+            <ChatInterface
+              isOpen={true}
+              context={{
+                type: "video",
+                data: {
+                  video,
+                  transcript: transcript || undefined,
+                },
+              }}
+              onClose={undefined} // 닫기 버튼 제거 (항상 열려있음)
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

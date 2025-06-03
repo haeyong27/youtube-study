@@ -112,7 +112,11 @@ export default function ChatInterface({
   }
 
   return (
-    <div className="fixed bottom-4 right-4 w-[500px] h-[700px] bg-white rounded-lg shadow-2xl border border-gray-200 flex flex-col z-50">
+    <div
+      className={`${
+        onClose ? "fixed bottom-4 right-4 w-[500px] h-[700px]" : "w-full h-full"
+      } bg-white rounded-lg shadow-2xl border border-gray-200 flex flex-col z-50`}
+    >
       {/* 헤더 */}
       <div className="bg-youtube-red text-white p-4 rounded-t-lg flex items-center justify-between">
         <div className="flex items-center space-x-2">
@@ -128,22 +132,22 @@ export default function ChatInterface({
             )}
           </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => setIsMinimized(true)}
-            className="text-white hover:text-red-200 transition-colors"
-          >
-            <Minimize2 className="w-4 h-4" />
-          </button>
-          {onClose && (
+        {onClose && (
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setIsMinimized(true)}
+              className="text-white hover:text-red-200 transition-colors"
+            >
+              <Minimize2 className="w-4 h-4" />
+            </button>
             <button
               onClick={onClose}
               className="text-white hover:text-red-200 transition-colors text-lg leading-none"
             >
               ×
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* 메시지 영역 */}

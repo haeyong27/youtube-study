@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Play,
@@ -26,6 +27,7 @@ export default function PlaylistView({
   playlistTitle,
   onBack,
 }: PlaylistViewProps) {
+  const router = useRouter();
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -114,8 +116,8 @@ export default function PlaylistView({
       setSelectedVideo(video);
       setShowChat(true);
     } else {
-      // 기본 동작: 새 탭에서 영상 열기
-      window.open(video.url, "_blank");
+      // 기본 동작: 영상 디테일 페이지로 이동
+      router.push(`/video/${video.id}`);
     }
   };
 
