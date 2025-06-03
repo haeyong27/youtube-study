@@ -58,3 +58,45 @@
 ## 환경 변수
 - `GOOGLE_API_KEY`: YouTube Data API 및 Gemini API
 - `OPENAI_API_KEY`: OpenAI GPT API
+
+## 설치 및 실행
+
+### 1. 의존성 설치
+```bash
+bun install
+```
+
+### 2. 환경 변수 설정
+`.env.local` 파일을 생성하고 다음 내용을 추가하세요:
+
+```env
+# YouTube Data API v3 키 (Google Cloud Console에서 발급)
+GOOGLE_API_KEY=your_youtube_api_key_here
+
+# OpenAI API 키 (향후 스크립트 요약 및 질의응답에 사용)
+OPENAI_API_KEY=your_openai_api_key_here
+```
+
+### 3. 개발 서버 실행
+```bash
+bun run dev
+```
+
+서버가 실행되면 http://localhost:3000 에서 확인할 수 있습니다.
+
+## 현재 구현 상태
+
+### ✅ 완료된 기능
+1. **채널 검색**: 유튜브 채널명으로 검색
+2. **채널 영상 목록**: 선택한 채널의 최신 영상들 표시
+3. **반응형 UI**: 모바일/데스크톱 대응
+
+### 🚧 진행 중인 기능
+- 영상 스크립트 추출
+- 내용 요약 및 분석
+- 질의응답 시스템
+
+### 📋 예정된 기능
+- 학습 진도 관리
+- 노트 작성 기능
+- 복습 알림 시스템
