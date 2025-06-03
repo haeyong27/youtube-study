@@ -30,10 +30,6 @@ export default function VideoList({
   const [playlists, setPlaylists] = useState<PlaylistInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [nextPageToken, setNextPageToken] = useState<string | undefined>();
-  const [playlistsNextPageToken, setPlaylistsNextPageToken] = useState<
-    string | undefined
-  >();
 
   useEffect(() => {
     if (activeTab === "videos") {
@@ -43,19 +39,14 @@ export default function VideoList({
     }
   }, [channel.id, activeTab]);
 
-  const loadVideos = async (pageToken?: string) => {
+  const loadVideos = async () => {
     setLoading(true);
     setError(null);
 
     try {
       const params = new URLSearchParams({
         channelId: channel.id,
-        maxResults: "20",
       });
-
-      if (pageToken) {
-        params.append("pageToken", pageToken);
-      }
 
       const response = await fetch(`/api/youtube/videos?${params}`);
       const data = await response.json();
@@ -64,13 +55,7 @@ export default function VideoList({
         throw new Error(data.error || "영상 목록을 가져오는데 실패했습니다.");
       }
 
-      if (pageToken) {
-        setVideos((prev) => [...prev, ...data.videos]);
-      } else {
-        setVideos(data.videos);
-      }
-
-      setNextPageToken(data.nextPageToken);
+      setVideos(data.videos);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다."
@@ -80,19 +65,14 @@ export default function VideoList({
     }
   };
 
-  const loadPlaylists = async (pageToken?: string) => {
+  const loadPlaylists = async () => {
     setLoading(true);
     setError(null);
 
     try {
       const params = new URLSearchParams({
         channelId: channel.id,
-        maxResults: "20",
       });
-
-      if (pageToken) {
-        params.append("pageToken", pageToken);
-      }
 
       const response = await fetch(`/api/youtube/playlists?${params}`);
       const data = await response.json();
@@ -103,31 +83,13 @@ export default function VideoList({
         );
       }
 
-      if (pageToken) {
-        setPlaylists((prev) => [...prev, ...data.playlists]);
-      } else {
-        setPlaylists(data.playlists);
-      }
-
-      setPlaylistsNextPageToken(data.nextPageToken);
+      setPlaylists(data.playlists);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다."
       );
     } finally {
       setLoading(false);
-    }
-  };
-
-  const loadMoreVideos = () => {
-    if (nextPageToken && !loading) {
-      loadVideos(nextPageToken);
-    }
-  };
-
-  const loadMorePlaylists = () => {
-    if (playlistsNextPageToken && !loading) {
-      loadPlaylists(playlistsNextPageToken);
     }
   };
 
@@ -220,114 +182,101 @@ export default function VideoList({
       )}
 
       {/* 영상 목록 */}
-      {activeTab === "videos" && videos.length > 0 && (
+      {activeTab === "videos" && (
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900">최신 영상</h2>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {videos.map((video) => (
-              <div
-                key={video.id}
-                className="card hover:shadow-lg transition-shadow cursor-pointer group"
-                onClick={() => {
-                  // TODO: 영상 선택 시 스크립트 추출 페이지로 이동
-                  window.open(video.url, "_blank");
-                }}
-              >
-                <div className="relative">
-                  <img
-                    src={video.thumbnail}
-                    alt={video.title}
-                    className="w-full h-48 object-cover rounded-lg"
-                  />
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
-                    <Play className="w-12 h-12 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                  <div className="absolute bottom-2 right-2 bg-black bg-opacity-80 text-white text-xs px-2 py-1 rounded">
-                    {video.duration}
-                  </div>
-                </div>
-
-                <div className="mt-4 space-y-2">
-                  <h3 className="font-semibold text-gray-900 line-clamp-2 leading-tight">
-                    {video.title}
-                  </h3>
-
-                  <div className="flex items-center space-x-4 text-sm text-gray-500">
-                    <div className="flex items-center space-x-1">
-                      <Eye className="w-4 h-4" />
-                      <span>{formatNumber(video.viewCount)}</span>
+          {videos.length > 0 ? (
+            <div className="space-y-3">
+              {videos.map((video) => (
+                <div
+                  key={video.id}
+                  className="flex items-start space-x-4 p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow cursor-pointer group"
+                  onClick={() => {
+                    // TODO: 영상 선택 시 스크립트 추출 페이지로 이동
+                    window.open(video.url, "_blank");
+                  }}
+                >
+                  {/* 썸네일 */}
+                  <div className="relative flex-shrink-0">
+                    <img
+                      src={video.thumbnail}
+                      alt={video.title}
+                      className="w-40 h-24 object-cover rounded-lg"
+                    />
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
+                      <Play className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
-                    <div className="flex items-center space-x-1">
-                      <Calendar className="w-4 h-4" />
-                      <span>{formatDate(video.publishedAt)}</span>
+                    <div className="absolute bottom-1 right-1 bg-black bg-opacity-80 text-white text-xs px-1 py-0.5 rounded">
+                      {video.duration}
                     </div>
                   </div>
 
-                  {video.description && (
-                    <p className="text-sm text-gray-600 line-clamp-2">
-                      {video.description}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+                  {/* 영상 정보 */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-gray-900 line-clamp-2 leading-tight mb-2">
+                      {video.title}
+                    </h3>
 
-          {/* 더 보기 버튼 */}
-          {nextPageToken && (
-            <div className="text-center">
-              <button
-                onClick={loadMoreVideos}
-                disabled={loading}
-                className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? "로딩 중..." : "더 보기"}
-              </button>
+                    <div className="flex items-center space-x-4 text-sm text-gray-500 mb-2">
+                      <div className="flex items-center space-x-1">
+                        <Eye className="w-4 h-4" />
+                        <span>{formatNumber(video.viewCount)}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Calendar className="w-4 h-4" />
+                        <span>{formatDate(video.publishedAt)}</span>
+                      </div>
+                    </div>
+
+                    {video.description && (
+                      <p className="text-sm text-gray-600 line-clamp-2">
+                        {video.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
+          ) : (
+            !loading && (
+              <div className="text-center py-12">
+                <VideoIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600">영상이 없습니다.</p>
+              </div>
+            )
           )}
         </div>
       )}
 
       {/* 플레이리스트 목록 */}
-      {activeTab === "playlists" && playlists.length > 0 && (
+      {activeTab === "playlists" && (
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900">플레이리스트</h2>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {playlists.map((playlist) => (
-              <div
-                key={playlist.id}
-                className="card hover:shadow-lg transition-shadow cursor-pointer group"
-                onClick={() => {
-                  if (onPlaylistSelect) {
-                    onPlaylistSelect(playlist.id, playlist.title);
+          {playlists.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {playlists.map((playlist) => (
+                <div
+                  key={playlist.id}
+                  className="card hover:shadow-lg transition-shadow cursor-pointer"
+                  onClick={() =>
+                    onPlaylistSelect?.(playlist.id, playlist.title)
                   }
-                }}
-              >
-                <div className="relative">
-                  <img
-                    src={playlist.thumbnail || "/placeholder-playlist.jpg"}
-                    alt={playlist.title}
-                    className="w-full h-48 object-cover rounded-lg"
-                  />
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
-                    <List className="w-12 h-12 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                  <div className="absolute bottom-2 right-2 bg-black bg-opacity-80 text-white text-xs px-2 py-1 rounded">
-                    {playlist.videoCount}개 영상
-                  </div>
-                </div>
-
-                <div className="mt-4 space-y-2">
-                  <h3 className="font-semibold text-gray-900 line-clamp-2 leading-tight">
-                    {playlist.title}
-                  </h3>
-
-                  <div className="flex items-center space-x-4 text-sm text-gray-500">
-                    <div className="flex items-center space-x-1">
-                      <VideoIcon className="w-4 h-4" />
-                      <span>{formatNumber(playlist.videoCount)}개 영상</span>
+                >
+                  <div className="relative">
+                    <img
+                      src={playlist.thumbnail}
+                      alt={playlist.title}
+                      className="w-full h-32 object-cover rounded-lg mb-3"
+                    />
+                    <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 transition-all rounded-lg flex items-center justify-center">
+                      <List className="w-8 h-8 text-white opacity-0 hover:opacity-100 transition-opacity" />
+                    </div>
+                    <div className="absolute bottom-1 right-1 bg-black bg-opacity-80 text-white text-xs px-2 py-1 rounded">
+                      {playlist.videoCount}개 영상
                     </div>
                   </div>
+
+                  <h3 className="font-semibold text-gray-900 line-clamp-2 mb-2">
+                    {playlist.title}
+                  </h3>
 
                   {playlist.description && (
                     <p className="text-sm text-gray-600 line-clamp-2">
@@ -335,36 +284,28 @@ export default function VideoList({
                     </p>
                   )}
                 </div>
-              </div>
-            ))}
-          </div>
-
-          {/* 더 보기 버튼 */}
-          {playlistsNextPageToken && (
-            <div className="text-center">
-              <button
-                onClick={loadMorePlaylists}
-                disabled={loading}
-                className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? "로딩 중..." : "더 보기"}
-              </button>
+              ))}
             </div>
+          ) : (
+            !loading && (
+              <div className="text-center py-12">
+                <List className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600">플레이리스트가 없습니다.</p>
+              </div>
+            )
           )}
         </div>
       )}
 
-      {loading &&
-        ((activeTab === "videos" && videos.length === 0) ||
-          (activeTab === "playlists" && playlists.length === 0)) && (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-youtube-red mx-auto"></div>
-            <p className="mt-4 text-gray-600">
-              {activeTab === "videos" ? "영상 목록을" : "플레이리스트를"}{" "}
-              불러오는 중...
-            </p>
-          </div>
-        )}
+      {loading && (
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-youtube-red mx-auto"></div>
+          <p className="mt-4 text-gray-600">
+            {activeTab === "videos" ? "영상을" : "플레이리스트를"} 불러오는
+            중...
+          </p>
+        </div>
+      )}
     </div>
   );
 }

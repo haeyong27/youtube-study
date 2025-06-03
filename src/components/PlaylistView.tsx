@@ -20,14 +20,13 @@ export default function PlaylistView({
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [nextPageToken, setNextPageToken] = useState<string | undefined>();
   const [title, setTitle] = useState(playlistTitle || "");
 
   useEffect(() => {
     loadPlaylistVideos();
   }, [playlistId]);
 
-  const loadPlaylistVideos = async (pageToken?: string) => {
+  const loadPlaylistVideos = async () => {
     setLoading(true);
     setError(null);
 
@@ -51,13 +50,8 @@ export default function PlaylistView({
       }
 
       if (data.playlist) {
-        if (pageToken) {
-          setVideos((prev) => [...prev, ...data.playlist.videos]);
-        } else {
-          setVideos(data.playlist.videos);
-          setTitle(data.playlist.title || title);
-        }
-        setNextPageToken(data.playlist.nextPageToken);
+        setVideos(data.playlist.videos);
+        setTitle(data.playlist.title || title);
       }
     } catch (err) {
       setError(
@@ -65,12 +59,6 @@ export default function PlaylistView({
       );
     } finally {
       setLoading(false);
-    }
-  };
-
-  const loadMoreVideos = () => {
-    if (nextPageToken && !loading) {
-      loadPlaylistVideos(nextPageToken);
     }
   };
 
@@ -212,19 +200,6 @@ export default function PlaylistView({
               </div>
             ))}
           </div>
-
-          {/* 더 보기 버튼 */}
-          {nextPageToken && (
-            <div className="text-center">
-              <button
-                onClick={loadMoreVideos}
-                disabled={loading}
-                className="btn-secondary disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? "로딩 중..." : "더 보기"}
-              </button>
-            </div>
-          )}
         </div>
       )}
 

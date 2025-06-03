@@ -37,8 +37,7 @@ export async function POST(request: NextRequest) {
           // 플레이리스트가 있다면 플레이리스트 정보도 가져오기
           if (parsed.playlistId) {
             const playlistInfo = await youtubeAPI.getPlaylistVideos(
-              parsed.playlistId,
-              10
+              parsed.playlistId
             );
             result.playlist = {
               id: parsed.playlistId,
@@ -64,8 +63,7 @@ export async function POST(request: NextRequest) {
       case "playlist":
         if (parsed.playlistId) {
           const playlistInfo = await youtubeAPI.getPlaylistVideos(
-            parsed.playlistId,
-            20
+            parsed.playlistId
           );
           result.playlist = {
             id: parsed.playlistId,

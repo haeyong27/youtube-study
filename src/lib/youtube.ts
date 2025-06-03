@@ -114,11 +114,12 @@ class YouTubeAPI {
     }
   }
 
-  // 채널의 플레이리스트 목록 가져오기
+  // 채널의 플레이리스트 목록 가져오기 (모든 플레이리스트를 한번에 가져오기)
   async getChannelPlaylists(
     channelId: string,
-    maxResults: number = 20,
-    pageToken?: string
+    maxResults: number = 50,
+    pageToken?: string,
+    allPlaylists: PlaylistInfo[] = []
   ): Promise<{ playlists: PlaylistInfo[]; nextPageToken?: string }> {
     try {
       const response = await axios.get(`${YOUTUBE_API_BASE_URL}/playlists`, {
@@ -145,9 +146,21 @@ class YouTubeAPI {
         })
       );
 
+      const combinedPlaylists = [...allPlaylists, ...playlists];
+
+      // 다음 페이지가 있으면 재귀적으로 모든 데이터 가져오기
+      if (response.data.nextPageToken) {
+        return await this.getChannelPlaylists(
+          channelId,
+          maxResults,
+          response.data.nextPageToken,
+          combinedPlaylists
+        );
+      }
+
       return {
-        playlists,
-        nextPageToken: response.data.nextPageToken,
+        playlists: combinedPlaylists,
+        nextPageToken: undefined, // 모든 데이터를 가져왔으므로 nextPageToken은 undefined
       };
     } catch (error) {
       console.error("채널 플레이리스트 목록 가져오기 실패:", error);
@@ -155,30 +168,33 @@ class YouTubeAPI {
     }
   }
 
-  // 플레이리스트 정보 가져오기
+  // 플레이리스트 정보 가져오기 (모든 영상을 한번에 가져오기)
   async getPlaylistVideos(
     playlistId: string,
-    maxResults: number = 20,
-    pageToken?: string
+    maxResults: number = 50,
+    pageToken?: string,
+    allVideos: VideoItem[] = []
   ): Promise<{
     videos: VideoItem[];
     nextPageToken?: string;
     playlistTitle?: string;
   }> {
     try {
-      // 플레이리스트 정보 가져오기
-      const playlistResponse = await axios.get(
-        `${YOUTUBE_API_BASE_URL}/playlists`,
-        {
-          params: {
-            key: this.apiKey,
-            id: playlistId,
-            part: "snippet",
-          },
-        }
-      );
-
-      const playlistTitle = playlistResponse.data.items[0]?.snippet?.title;
+      // 플레이리스트 정보 가져오기 (첫 번째 호출에서만)
+      let playlistTitle: string | undefined;
+      if (!pageToken) {
+        const playlistResponse = await axios.get(
+          `${YOUTUBE_API_BASE_URL}/playlists`,
+          {
+            params: {
+              key: this.apiKey,
+              id: playlistId,
+              part: "snippet",
+            },
+          }
+        );
+        playlistTitle = playlistResponse.data.items[0]?.snippet?.title;
+      }
 
       // 플레이리스트 아이템 가져오기
       const itemsResponse = await axios.get(
@@ -223,9 +239,26 @@ class YouTubeAPI {
         })
       );
 
+      const combinedVideos = [...allVideos, ...videos];
+
+      // 다음 페이지가 있으면 재귀적으로 모든 데이터 가져오기
+      if (itemsResponse.data.nextPageToken) {
+        const nextResult = await this.getPlaylistVideos(
+          playlistId,
+          maxResults,
+          itemsResponse.data.nextPageToken,
+          combinedVideos
+        );
+        return {
+          videos: nextResult.videos,
+          nextPageToken: undefined, // 모든 데이터를 가져왔으므로 nextPageToken은 undefined
+          playlistTitle: playlistTitle || nextResult.playlistTitle,
+        };
+      }
+
       return {
-        videos,
-        nextPageToken: itemsResponse.data.nextPageToken,
+        videos: combinedVideos,
+        nextPageToken: undefined, // 모든 데이터를 가져왔으므로 nextPageToken은 undefined
         playlistTitle,
       };
     } catch (error) {
@@ -262,30 +295,51 @@ class YouTubeAPI {
     }
   }
 
-  // 채널의 영상 목록 가져오기
+  // 채널의 영상 목록 가져오기 (모든 영상을 한번에 가져오기)
   async getChannelVideos(
     channelId: string,
-    maxResults: number = 20,
-    pageToken?: string
+    maxResults: number = 50,
+    pageToken?: string,
+    allVideos: VideoItem[] = []
   ): Promise<{ videos: VideoItem[]; nextPageToken?: string }> {
     try {
-      // 1. 채널의 업로드 플레이리스트 ID 가져오기
-      const channelResponse = await axios.get(
-        `${YOUTUBE_API_BASE_URL}/channels`,
-        {
-          params: {
-            key: this.apiKey,
-            id: channelId,
-            part: "contentDetails",
-          },
-        }
-      );
+      // 1. 채널의 업로드 플레이리스트 ID 가져오기 (첫 번째 호출에서만)
+      let uploadsPlaylistId: string;
+      if (!pageToken) {
+        const channelResponse = await axios.get(
+          `${YOUTUBE_API_BASE_URL}/channels`,
+          {
+            params: {
+              key: this.apiKey,
+              id: channelId,
+              part: "contentDetails",
+            },
+          }
+        );
 
-      const uploadsPlaylistId =
-        channelResponse.data.items[0]?.contentDetails?.relatedPlaylists
-          ?.uploads;
-      if (!uploadsPlaylistId) {
-        throw new Error("업로드 플레이리스트를 찾을 수 없습니다.");
+        uploadsPlaylistId =
+          channelResponse.data.items[0]?.contentDetails?.relatedPlaylists
+            ?.uploads;
+        if (!uploadsPlaylistId) {
+          throw new Error("업로드 플레이리스트를 찾을 수 없습니다.");
+        }
+      } else {
+        // pageToken이 있는 경우, 이미 uploadsPlaylistId를 알고 있다고 가정
+        // 실제로는 이 값을 전달받아야 하지만, 재귀 호출을 위해 다른 방법 사용
+        const channelResponse = await axios.get(
+          `${YOUTUBE_API_BASE_URL}/channels`,
+          {
+            params: {
+              key: this.apiKey,
+              id: channelId,
+              part: "contentDetails",
+            },
+          }
+        );
+
+        uploadsPlaylistId =
+          channelResponse.data.items[0]?.contentDetails?.relatedPlaylists
+            ?.uploads;
       }
 
       // 2. 플레이리스트의 영상 목록 가져오기
@@ -332,9 +386,21 @@ class YouTubeAPI {
         })
       );
 
+      const combinedVideos = [...allVideos, ...videos];
+
+      // 다음 페이지가 있으면 재귀적으로 모든 데이터 가져오기
+      if (playlistResponse.data.nextPageToken) {
+        return await this.getChannelVideos(
+          channelId,
+          maxResults,
+          playlistResponse.data.nextPageToken,
+          combinedVideos
+        );
+      }
+
       return {
-        videos,
-        nextPageToken: playlistResponse.data.nextPageToken,
+        videos: combinedVideos,
+        nextPageToken: undefined, // 모든 데이터를 가져왔으므로 nextPageToken은 undefined
       };
     } catch (error) {
       console.error("채널 영상 목록 가져오기 실패:", error);

@@ -5,8 +5,6 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const channelId = searchParams.get("channelId");
-    const maxResults = parseInt(searchParams.get("maxResults") || "20");
-    const pageToken = searchParams.get("pageToken") || undefined;
 
     if (!channelId) {
       return NextResponse.json(
@@ -15,11 +13,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const result = await youtubeAPI.getChannelVideos(
-      channelId,
-      maxResults,
-      pageToken
-    );
+    const result = await youtubeAPI.getChannelVideos(channelId);
 
     return NextResponse.json(result);
   } catch (error) {
