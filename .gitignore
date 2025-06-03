@@ -74,4 +74,13 @@ temp/
 *.ntvs*
 *.njsproj
 *.sln
-*.sw? 
+*.sw?
+
+# Video analysis results (temporary data)
+video_analysis*.json
+analyze_video.py
+
+# YouTube download temporary files
+/tmp/
+*.vtt
+*.srt 
