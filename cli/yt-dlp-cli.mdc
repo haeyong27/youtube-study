@@ -4,4 +4,4 @@ globs:
 alwaysApply: false
 ---
 여기는 yt-dlp를 사용해서 특정 영상의 스크립트를 가져오는 cli 전용 페이지야.
-관련 명령어는 [youtube.ts](mdc:src/types/youtube.ts) 이 내용을 참고해줘.
+관련 명령어는 [yt-dlp-README.md](mdc:yt-dlp-README.md) 이 내용을 참고해줘.

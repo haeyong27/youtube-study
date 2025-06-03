@@ -32,6 +32,7 @@ export default function VideoDetailPage() {
   const [transcriptLoading, setTranscriptLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showTranscript, setShowTranscript] = useState(false);
+  const [transcriptError, setTranscriptError] = useState<string | null>(null);
 
   useEffect(() => {
     if (videoId) {
@@ -68,6 +69,7 @@ export default function VideoDetailPage() {
 
     setTranscriptLoading(true);
     setError(null);
+    setTranscriptError(null);
 
     try {
       const response = await fetch(
@@ -82,11 +84,12 @@ export default function VideoDetailPage() {
       setTranscript(data.transcript);
       setShowTranscript(true); // 스크립트를 가져오면 자동으로 열기
     } catch (err) {
-      setError(
+      const errorMessage =
         err instanceof Error
           ? err.message
-          : "스크립트를 가져오는데 실패했습니다."
-      );
+          : "스크립트를 가져오는데 실패했습니다.";
+      setTranscriptError(errorMessage);
+      console.error("스크립트 로딩 오류:", err);
     } finally {
       setTranscriptLoading(false);
     }
@@ -276,15 +279,43 @@ export default function VideoDetailPage() {
 
           {!transcript && !transcriptLoading && (
             <div className="p-6">
-              <div className="text-center py-8 text-gray-500">
-                <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="mb-2">
-                  스크립트를 가져와서 더 정확한 AI 분석을 받아보세요
-                </p>
-                <p className="text-sm">
-                  yt-dlp를 사용하여 영상의 자막/스크립트를 추출합니다.
-                </p>
-              </div>
+              {transcriptError ? (
+                <div className="text-center py-8">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+                    <FileText className="w-12 h-12 text-red-400 mx-auto mb-4" />
+                    <p className="text-red-600 mb-4">{transcriptError}</p>
+                    <div className="space-y-3">
+                      <button
+                        onClick={loadTranscript}
+                        className="btn-secondary flex items-center space-x-2 mx-auto"
+                      >
+                        <Download className="w-4 h-4" />
+                        <span>다시 시도</span>
+                      </button>
+                      <div className="text-sm text-gray-600">
+                        <p className="mb-2">
+                          💡 스크립트 없이도 AI와 채팅할 수 있습니다:
+                        </p>
+                        <ul className="text-left space-y-1">
+                          <li>• 영상 제목과 설명을 바탕으로 분석</li>
+                          <li>• 일반적인 학습 조언 제공</li>
+                          <li>• 관련 주제에 대한 질문 답변</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="mb-2">
+                    스크립트를 가져와서 더 정확한 AI 분석을 받아보세요
+                  </p>
+                  <p className="text-sm">
+                    yt-dlp를 사용하여 영상의 자막/스크립트를 추출합니다.
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
