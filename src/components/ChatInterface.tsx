@@ -1,26 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useChat } from "@ai-sdk/react";
-import { Send, Bot, User, Minimize2, Maximize2 } from "lucide-react";
+import { Send, Bot, User, Minimize2, Maximize2, Square } from "lucide-react";
 import { VideoItem, PlaylistInfo, ChannelInfo } from "@/types/youtube";
 
 interface ChatInterfaceProps {
+  isOpen?: boolean;
   context?: {
     type: "video" | "playlist" | "channel";
-    data: VideoItem | PlaylistInfo | ChannelInfo;
+    data:
+      | VideoItem
+      | PlaylistInfo
+      | ChannelInfo
+      | { video: VideoItem; transcript?: string };
     videos?: VideoItem[];
   };
   onClose?: () => void;
 }
 
 export default function ChatInterface({
+  isOpen = true,
   context,
   onClose,
 }: ChatInterfaceProps) {
   const [isMinimized, setIsMinimized] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading } =
+  const { messages, input, handleInputChange, handleSubmit, isLoading, stop } =
     useChat({
       api: "/api/chat",
       body: {
@@ -34,12 +41,28 @@ export default function ChatInterface({
       },
     });
 
+  // 메시지가 추가되거나 로딩 상태가 변경될 때 자동 스크롤
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isLoading]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  if (!isOpen) return null;
+
   const getContextTitle = () => {
     if (!context) return "AI 어시스턴트";
 
     switch (context.type) {
       case "video":
-        return `영상: ${(context.data as VideoItem).title}`;
+        const videoData = context.data as
+          | VideoItem
+          | { video: VideoItem; transcript?: string };
+        const videoTitle =
+          "title" in videoData ? videoData.title : videoData.video.title;
+        return `영상: ${videoTitle}`;
       case "playlist":
         return `플레이리스트: ${(context.data as PlaylistInfo).title}`;
       case "channel":
@@ -54,10 +77,16 @@ export default function ChatInterface({
 
     switch (context.type) {
       case "video":
-        const video = context.data as VideoItem;
+        const videoData = context.data as
+          | VideoItem
+          | { video: VideoItem; transcript?: string };
+        const video = "title" in videoData ? videoData : videoData.video;
+        const hasTranscript = "transcript" in videoData && videoData.transcript;
         return `영상 길이: ${
           video.duration
-        } | 조회수: ${video.viewCount.toLocaleString()}회`;
+        } | 조회수: ${video.viewCount.toLocaleString()}회${
+          hasTranscript ? " | 스크립트 있음" : ""
+        }`;
       case "playlist":
         const playlist = context.data as PlaylistInfo;
         return `${context.videos?.length || 0}개 영상`;
@@ -83,15 +112,19 @@ export default function ChatInterface({
   }
 
   return (
-    <div className="fixed bottom-4 right-4 w-96 h-[600px] bg-white rounded-lg shadow-2xl border border-gray-200 flex flex-col z-50">
+    <div className="fixed bottom-4 right-4 w-[500px] h-[700px] bg-white rounded-lg shadow-2xl border border-gray-200 flex flex-col z-50">
       {/* 헤더 */}
       <div className="bg-youtube-red text-white p-4 rounded-t-lg flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Bot className="w-5 h-5" />
-          <div>
-            <h3 className="font-semibold text-sm">{getContextTitle()}</h3>
+          <div className="min-w-0 flex-1">
+            <h3 className="font-semibold text-sm truncate">
+              {getContextTitle()}
+            </h3>
             {getContextSummary() && (
-              <p className="text-xs text-red-100">{getContextSummary()}</p>
+              <p className="text-xs text-red-100 truncate">
+                {getContextSummary()}
+              </p>
             )}
           </div>
         </div>
@@ -105,7 +138,7 @@ export default function ChatInterface({
           {onClose && (
             <button
               onClick={onClose}
-              className="text-white hover:text-red-200 transition-colors"
+              className="text-white hover:text-red-200 transition-colors text-lg leading-none"
             >
               ×
             </button>
@@ -205,10 +238,26 @@ export default function ChatInterface({
             </div>
           </div>
         )}
+
+        {/* 자동 스크롤을 위한 참조 요소 */}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* 입력 영역 */}
       <div className="border-t border-gray-200 p-4">
+        {/* 생성 중지 버튼 (로딩 중일 때만 표시) */}
+        {isLoading && (
+          <div className="mb-3 flex justify-center">
+            <button
+              onClick={stop}
+              className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors flex items-center space-x-2 text-sm"
+            >
+              <Square className="w-4 h-4" />
+              <span>생성 중지</span>
+            </button>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="flex space-x-2">
           <input
             value={input}

@@ -295,51 +295,30 @@ class YouTubeAPI {
     }
   }
 
-  // 채널의 영상 목록 가져오기 (모든 영상을 한번에 가져오기)
+  // 채널의 영상 목록 가져오기 (페이지네이션 지원)
   async getChannelVideos(
     channelId: string,
-    maxResults: number = 50,
-    pageToken?: string,
-    allVideos: VideoItem[] = []
+    maxResults: number = 20,
+    pageToken?: string
   ): Promise<{ videos: VideoItem[]; nextPageToken?: string }> {
     try {
-      // 1. 채널의 업로드 플레이리스트 ID 가져오기 (첫 번째 호출에서만)
-      let uploadsPlaylistId: string;
-      if (!pageToken) {
-        const channelResponse = await axios.get(
-          `${YOUTUBE_API_BASE_URL}/channels`,
-          {
-            params: {
-              key: this.apiKey,
-              id: channelId,
-              part: "contentDetails",
-            },
-          }
-        );
-
-        uploadsPlaylistId =
-          channelResponse.data.items[0]?.contentDetails?.relatedPlaylists
-            ?.uploads;
-        if (!uploadsPlaylistId) {
-          throw new Error("업로드 플레이리스트를 찾을 수 없습니다.");
+      // 1. 채널의 업로드 플레이리스트 ID 가져오기
+      const channelResponse = await axios.get(
+        `${YOUTUBE_API_BASE_URL}/channels`,
+        {
+          params: {
+            key: this.apiKey,
+            id: channelId,
+            part: "contentDetails",
+          },
         }
-      } else {
-        // pageToken이 있는 경우, 이미 uploadsPlaylistId를 알고 있다고 가정
-        // 실제로는 이 값을 전달받아야 하지만, 재귀 호출을 위해 다른 방법 사용
-        const channelResponse = await axios.get(
-          `${YOUTUBE_API_BASE_URL}/channels`,
-          {
-            params: {
-              key: this.apiKey,
-              id: channelId,
-              part: "contentDetails",
-            },
-          }
-        );
+      );
 
-        uploadsPlaylistId =
-          channelResponse.data.items[0]?.contentDetails?.relatedPlaylists
-            ?.uploads;
+      const uploadsPlaylistId =
+        channelResponse.data.items[0]?.contentDetails?.relatedPlaylists
+          ?.uploads;
+      if (!uploadsPlaylistId) {
+        throw new Error("업로드 플레이리스트를 찾을 수 없습니다.");
       }
 
       // 2. 플레이리스트의 영상 목록 가져오기
@@ -386,21 +365,9 @@ class YouTubeAPI {
         })
       );
 
-      const combinedVideos = [...allVideos, ...videos];
-
-      // 다음 페이지가 있으면 재귀적으로 모든 데이터 가져오기
-      if (playlistResponse.data.nextPageToken) {
-        return await this.getChannelVideos(
-          channelId,
-          maxResults,
-          playlistResponse.data.nextPageToken,
-          combinedVideos
-        );
-      }
-
       return {
-        videos: combinedVideos,
-        nextPageToken: undefined, // 모든 데이터를 가져왔으므로 nextPageToken은 undefined
+        videos,
+        nextPageToken: playlistResponse.data.nextPageToken,
       };
     } catch (error) {
       console.error("채널 영상 목록 가져오기 실패:", error);

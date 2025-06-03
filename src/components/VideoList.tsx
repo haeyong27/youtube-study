@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Play,
@@ -27,6 +28,7 @@ export default function VideoList({
   onBack,
   onPlaylistSelect,
 }: VideoListProps) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"videos" | "playlists">("videos");
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [playlists, setPlaylists] = useState<PlaylistInfo[]>([]);
@@ -34,16 +36,22 @@ export default function VideoList({
   const [error, setError] = useState<string | null>(null);
   const [showChat, setShowChat] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<VideoItem | null>(null);
+  const [nextPageToken, setNextPageToken] = useState<string | undefined>();
+  const [hasMoreVideos, setHasMoreVideos] = useState(true);
 
   useEffect(() => {
     if (activeTab === "videos") {
+      // 영상 탭으로 변경 시 상태 초기화
+      setVideos([]);
+      setNextPageToken(undefined);
+      setHasMoreVideos(true);
       loadVideos();
     } else {
       loadPlaylists();
     }
   }, [channel.id, activeTab]);
 
-  const loadVideos = async () => {
+  const loadVideos = async (loadMore: boolean = false) => {
     setLoading(true);
     setError(null);
 
@@ -52,6 +60,11 @@ export default function VideoList({
         channelId: channel.id,
       });
 
+      // 더보기인 경우 pageToken 추가
+      if (loadMore && nextPageToken) {
+        params.append("pageToken", nextPageToken);
+      }
+
       const response = await fetch(`/api/youtube/videos?${params}`);
       const data = await response.json();
 
@@ -59,7 +72,16 @@ export default function VideoList({
         throw new Error(data.error || "영상 목록을 가져오는데 실패했습니다.");
       }
 
-      setVideos(data.videos);
+      if (loadMore) {
+        // 더보기인 경우 기존 영상에 추가
+        setVideos((prev) => [...prev, ...data.videos]);
+      } else {
+        // 새로 로드하는 경우 교체
+        setVideos(data.videos);
+      }
+
+      setNextPageToken(data.nextPageToken);
+      setHasMoreVideos(!!data.nextPageToken);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다."
@@ -123,8 +145,8 @@ export default function VideoList({
       setSelectedVideo(video);
       setShowChat(true);
     } else {
-      // 기본 동작: 새 탭에서 영상 열기
-      window.open(video.url, "_blank");
+      // 기본 동작: 영상 디테일 페이지로 이동
+      router.push(`/video/${video.id}`);
     }
   };
 
@@ -274,6 +296,18 @@ export default function VideoList({
                   </button>
                 </div>
               ))}
+
+              {/* 더보기 버튼 */}
+              {hasMoreVideos && !loading && (
+                <div className="text-center pt-4">
+                  <button
+                    onClick={() => loadVideos(true)}
+                    className="btn-secondary"
+                  >
+                    더보기
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             !loading && (
@@ -340,8 +374,12 @@ export default function VideoList({
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-youtube-red mx-auto"></div>
           <p className="mt-4 text-gray-600">
-            {activeTab === "videos" ? "영상을" : "플레이리스트를"} 불러오는
-            중...
+            {activeTab === "videos"
+              ? videos.length > 0
+                ? "더 많은 영상을"
+                : "영상을"
+              : "플레이리스트를"}{" "}
+            불러오는 중...
           </p>
         </div>
       )}
